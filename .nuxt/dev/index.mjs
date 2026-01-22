@@ -1,12 +1,10 @@
 import process from 'node:process';globalThis._importMeta_={url:import.meta.url,env:process.env};import { tmpdir } from 'node:os';
 import { defineEventHandler, handleCacheHeaders, splitCookiesString, createEvent, fetchWithEvent, isEvent, eventHandler, setHeaders, sendRedirect, proxyRequest, getRequestHeader, setResponseHeaders, setResponseStatus, send, getRequestHeaders, setResponseHeader, appendResponseHeader, getRequestURL, getResponseHeader, removeResponseHeader, createError, getQuery as getQuery$1, readBody, createApp, createRouter as createRouter$1, toNodeListener, lazyEventHandler, getResponseStatus, getRouterParam, getResponseStatusText } from 'file:///Users/marclange/Sites/node_vue/node_modules/h3/dist/index.mjs';
 import { Server } from 'node:http';
-import path, { resolve, dirname, join } from 'node:path';
+import { resolve, dirname, join } from 'node:path';
 import nodeCrypto from 'node:crypto';
 import { parentPort, threadId } from 'node:worker_threads';
 import { escapeHtml } from 'file:///Users/marclange/Sites/node_vue/node_modules/@vue/shared/dist/shared.cjs.js';
-import fs, { promises } from 'node:fs';
-import initSqlJs from 'file:///Users/marclange/Sites/node_vue/node_modules/sql.js/dist/sql-wasm.js';
 import { createRenderer, getRequestDependencies, getPreloadLinks, getPrefetchLinks } from 'file:///Users/marclange/Sites/node_vue/node_modules/vue-bundle-renderer/dist/runtime.mjs';
 import { parseURL, withoutBase, joinURL, getQuery, withQuery, withTrailingSlash, decodePath, withLeadingSlash, withoutTrailingSlash, joinRelativeURL } from 'file:///Users/marclange/Sites/node_vue/node_modules/ufo/dist/index.mjs';
 import process$1 from 'node:process';
@@ -32,6 +30,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { stringify, uneval } from 'file:///Users/marclange/Sites/node_vue/node_modules/devalue/index.js';
 import { captureRawStackTrace, parseRawStackTrace } from 'file:///Users/marclange/Sites/node_vue/node_modules/errx/dist/index.js';
 import { isVNode, toValue, isRef } from 'file:///Users/marclange/Sites/node_vue/node_modules/vue/index.mjs';
+import { promises } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname as dirname$1, resolve as resolve$1 } from 'file:///Users/marclange/Sites/node_vue/node_modules/pathe/dist/index.mjs';
 import { createHead as createHead$1, propsToString, renderSSRHead } from 'file:///Users/marclange/Sites/node_vue/node_modules/unhead/dist/server.mjs';
@@ -1459,22 +1458,7 @@ const plugins = [
 _21PBNGOMK7LmsNy7OofIOQMygE5JwfkEsFcdMQRlA
 ];
 
-const assets = {
-  "/index.mjs": {
-    "type": "text/javascript; charset=utf-8",
-    "etag": "\"179f7-jdn3u1RpWQ45jPsl2GFUogYdHLw\"",
-    "mtime": "2026-01-22T18:09:36.091Z",
-    "size": 96759,
-    "path": "index.mjs"
-  },
-  "/index.mjs.map": {
-    "type": "application/json",
-    "etag": "\"58902-Y944t7atiHhebILk5ihyQODUaLY\"",
-    "mtime": "2026-01-22T18:09:36.091Z",
-    "size": 362754,
-    "path": "index.mjs.map"
-  }
-};
+const assets = {};
 
 function readAsset (id) {
   const serverDir = dirname$1(fileURLToPath(globalThis._importMeta_.url));
@@ -2254,23 +2238,27 @@ const health_get$1 = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProper
   default: health_get
 }, Symbol.toStringTag, { value: 'Module' }));
 
-let db = null;
+const isCloudflare = typeof process !== "undefined" && process.env.DB !== void 0;
+let localDb = null;
 let dbInitialized = false;
-async function useDatabase() {
-  if (dbInitialized && db) {
-    return db;
+async function getLocalDatabase() {
+  if (dbInitialized && localDb) {
+    return localDb;
   }
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const initSqlJs = (await import('file:///Users/marclange/Sites/node_vue/node_modules/sql.js/dist/sql-wasm.js')).default;
   const SQL = await initSqlJs();
   const dbPath = path.join(process.cwd(), "server", "database.sqlite");
   if (fs.existsSync(dbPath)) {
     const buffer = fs.readFileSync(dbPath);
-    db = new SQL.Database(buffer);
-    console.log("\u2705 Database loaded:", dbPath);
+    localDb = new SQL.Database(buffer);
+    console.log("\u2705 Local SQLite loaded:", dbPath);
   } else {
-    db = new SQL.Database();
-    console.log("\u2705 New database created:", dbPath);
+    localDb = new SQL.Database();
+    console.log("\u2705 New local SQLite created:", dbPath);
   }
-  db.run(`
+  localDb.run(`
     CREATE TABLE IF NOT EXISTS journals (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       text TEXT NOT NULL,
@@ -2278,7 +2266,7 @@ async function useDatabase() {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
-  db.run(`
+  localDb.run(`
     CREATE TABLE IF NOT EXISTS todos (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       text TEXT NOT NULL,
@@ -2290,103 +2278,110 @@ async function useDatabase() {
       FOREIGN KEY (journal_id) REFERENCES journals(id) ON DELETE SET NULL
     )
   `);
-  db.run(`CREATE INDEX IF NOT EXISTS idx_todos_journal_id ON todos(journal_id)`);
-  db.run(`CREATE INDEX IF NOT EXISTS idx_todos_done ON todos(done)`);
+  localDb.run(`CREATE INDEX IF NOT EXISTS idx_todos_journal_id ON todos(journal_id)`);
+  localDb.run(`CREATE INDEX IF NOT EXISTS idx_todos_done ON todos(done)`);
   dbInitialized = true;
-  return db;
+  return localDb;
 }
-function saveDatabase() {
-  if (!db) return;
+function saveLocalDatabase() {
+  if (!localDb) return;
+  const fs = require("fs");
+  const path = require("path");
   const dbPath = path.join(process.cwd(), "server", "database.sqlite");
-  const data = db.export();
+  const data = localDb.export();
   fs.writeFileSync(dbPath, data);
 }
-async function getAllJournals() {
-  const database = await useDatabase();
-  const stmt = database.prepare("SELECT * FROM journals ORDER BY created_at DESC");
-  const result = [];
-  while (stmt.step()) {
-    result.push(stmt.getAsObject());
+async function useDatabase(event) {
+  var _a, _b, _c;
+  if (isCloudflare && ((_c = (_b = (_a = void 0 ) == null ? void 0 : _a.cloudflare) == null ? void 0 : _b.env) == null ? void 0 : _c.DB)) {
+    return event.context.cloudflare.env.DB;
   }
-  stmt.free();
-  return result;
+  return getLocalDatabase();
 }
-async function createJournal(text) {
-  const database = await useDatabase();
-  database.run("INSERT INTO journals (text) VALUES (?)", [text]);
-  saveDatabase();
-  const stmt = database.prepare("SELECT * FROM journals ORDER BY id DESC LIMIT 1");
-  stmt.step();
-  const row = stmt.getAsObject();
-  stmt.free();
-  return row;
+async function executeQuery(db, query, params = []) {
+  if (db.prepare) {
+    const stmt = db.prepare(query).bind(...params);
+    return await stmt.all();
+  } else {
+    const stmt = db.prepare(query);
+    if (params.length > 0) {
+      stmt.bind(params);
+    }
+    const result = [];
+    while (stmt.step()) {
+      result.push(stmt.getAsObject());
+    }
+    stmt.free();
+    return { results: result };
+  }
 }
-async function updateJournal(id, text) {
-  const database = await useDatabase();
-  database.run("UPDATE journals SET text = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", [text, id]);
-  saveDatabase();
+async function executeRun(db, query, params = []) {
+  if (db.prepare) {
+    const stmt = db.prepare(query).bind(...params);
+    return await stmt.run();
+  } else {
+    db.run(query, params);
+    saveLocalDatabase();
+    return { success: true };
+  }
+}
+async function getAllJournals(event) {
+  const db = await useDatabase(event);
+  const result = await executeQuery(db, "SELECT * FROM journals ORDER BY created_at DESC");
+  return result.results || result;
+}
+async function createJournal(text, event) {
+  const db = await useDatabase(event);
+  await executeRun(db, "INSERT INTO journals (text) VALUES (?)", [text]);
+  const result = await executeQuery(db, "SELECT * FROM journals ORDER BY id DESC LIMIT 1");
+  const rows = result.results || result;
+  return rows[0];
+}
+async function updateJournal(id, text, event) {
+  const db = await useDatabase(event);
+  await executeRun(db, "UPDATE journals SET text = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", [text, id]);
   return { id, text, updated_at: (/* @__PURE__ */ new Date()).toISOString() };
 }
-async function deleteJournal(id) {
-  const database = await useDatabase();
-  database.run("DELETE FROM journals WHERE id = ?", [id]);
-  saveDatabase();
+async function deleteJournal(id, event) {
+  const db = await useDatabase(event);
+  await executeRun(db, "DELETE FROM journals WHERE id = ?", [id]);
 }
-async function getAllTodos() {
-  const database = await useDatabase();
-  const stmt = database.prepare("SELECT * FROM todos ORDER BY created_at DESC");
-  const result = [];
-  while (stmt.step()) {
-    result.push(stmt.getAsObject());
-  }
-  stmt.free();
-  return result;
+async function getAllTodos(event) {
+  const db = await useDatabase(event);
+  const result = await executeQuery(db, "SELECT * FROM todos ORDER BY created_at DESC");
+  return result.results || result;
 }
-async function createTodo(text, journal_id = null, priority = "medium") {
-  const database = await useDatabase();
-  database.run("INSERT INTO todos (text, journal_id, priority) VALUES (?, ?, ?)", [text, journal_id, priority]);
-  saveDatabase();
-  const stmt = database.prepare("SELECT * FROM todos ORDER BY id DESC LIMIT 1");
-  stmt.step();
-  const row = stmt.getAsObject();
-  stmt.free();
-  return row;
+async function createTodo(text, journal_id = null, priority = "medium", event) {
+  const db = await useDatabase(event);
+  await executeRun(db, "INSERT INTO todos (text, journal_id, priority) VALUES (?, ?, ?)", [text, journal_id, priority]);
+  const result = await executeQuery(db, "SELECT * FROM todos ORDER BY id DESC LIMIT 1");
+  const rows = result.results || result;
+  return rows[0];
 }
-async function updateTodo(id, updates) {
-  const database = await useDatabase();
-  const current = database.prepare("SELECT * FROM todos WHERE id = ?");
-  current.bind([id]);
-  if (!current.step()) {
-    current.free();
-    return null;
-  }
-  const row = current.getAsObject();
-  current.free();
+async function updateTodo(id, updates, event) {
+  const db = await useDatabase(event);
+  const currentResult = await executeQuery(db, "SELECT * FROM todos WHERE id = ?", [id]);
+  const rows = currentResult.results || currentResult;
+  if (rows.length === 0) return null;
+  const row = rows[0];
   const newText = updates.text !== void 0 ? updates.text : row.text;
   const newDone = updates.done !== void 0 ? updates.done ? 1 : 0 : row.done;
   const newPriority = updates.priority !== void 0 ? updates.priority : row.priority;
-  database.run(
+  await executeRun(
+    db,
     "UPDATE todos SET text = ?, done = ?, priority = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
     [newText, newDone, newPriority, id]
   );
-  saveDatabase();
   return { id, text: newText, done: newDone, priority: newPriority, journal_id: row.journal_id, updated_at: (/* @__PURE__ */ new Date()).toISOString() };
 }
-async function deleteTodo(id) {
-  const database = await useDatabase();
-  database.run("DELETE FROM todos WHERE id = ?", [id]);
-  saveDatabase();
+async function deleteTodo(id, event) {
+  const db = await useDatabase(event);
+  await executeRun(db, "DELETE FROM todos WHERE id = ?", [id]);
 }
-async function getTodosByJournal(journal_id) {
-  const database = await useDatabase();
-  const stmt = database.prepare("SELECT * FROM todos WHERE journal_id = ? ORDER BY created_at ASC");
-  stmt.bind([journal_id]);
-  const result = [];
-  while (stmt.step()) {
-    result.push(stmt.getAsObject());
-  }
-  stmt.free();
-  return result;
+async function getTodosByJournal(journal_id, event) {
+  const db = await useDatabase(event);
+  const result = await executeQuery(db, "SELECT * FROM todos WHERE journal_id = ? ORDER BY created_at ASC", [journal_id]);
+  return result.results || result;
 }
 
 const _id__delete$2 = defineEventHandler(async (event) => {

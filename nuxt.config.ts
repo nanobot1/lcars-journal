@@ -24,6 +24,12 @@ export default defineNuxtConfig({
     }
   },
 
+  // Cloudflare Pages preset
+  nitro: {
+    preset: 'cloudflare-pages',
+    // D1 database bindings will be automatically available via process.env
+  },
+
   // Runtime config for API base URL
   runtimeConfig: {
     public: {
