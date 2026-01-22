@@ -159,6 +159,12 @@ async function createTodosFromEntry() {
   }
 }
 
+// Helper to truncate text
+const truncateText = (text, maxLength = 150) => {
+  if (text.length <= maxLength) return text
+  return text.substring(0, maxLength) + '...'
+}
+
 const filteredEntries = computed(() => {
   let result = entries.value || []
   
@@ -260,9 +266,16 @@ onMounted(() => {
               <div class="text-xs text-slate-400 mb-1">
                 {{ getFormattedDate(entry.created_at) }}
               </div>
-              <div class="text-sm whitespace-pre-wrap">{{ entry.text }}</div>
+              <div class="text-sm whitespace-pre-wrap">{{ truncateText(entry.text, 200) }}</div>
+              <NuxtLink 
+                v-if="entry.text.length > 200"
+                :to="`/journal/${entry.id}`"
+                class="text-xs text-blue-400 hover:text-blue-300 mt-2 inline-block"
+              >
+                → Mehr lesen
+              </NuxtLink>
             </div>
-            <div class="flex gap-2">
+            <div class="flex gap-2 flex-shrink-0">
               <LcarsButton size="small" variant="secondary" @click="openTodoModal(entry)">
                 Todos
               </LcarsButton>

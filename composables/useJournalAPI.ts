@@ -9,6 +9,10 @@ export const useJournalAPI = () => {
     return await $fetch(`${apiBase}/journals`)
   }
 
+  const getById = async (id: number) => {
+    return await $fetch(`${apiBase}/journals/${id}`)
+  }
+
   const create = async (text: string) => {
     return await $fetch(`${apiBase}/journals`, {
       method: 'POST',
@@ -35,6 +39,7 @@ export const useJournalAPI = () => {
 
   return {
     getAll,
+    getById,
     create,
     update,
     remove,
