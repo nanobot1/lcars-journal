@@ -3,7 +3,8 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   
   modules: [
-    '@nuxtjs/tailwindcss'
+    '@nuxtjs/tailwindcss',
+    'nuxt-auth-utils'
   ],
 
   css: ['~/assets/css/main.css'],
@@ -32,6 +33,10 @@ export default defineNuxtConfig({
 
   // Runtime config for API base URL
   runtimeConfig: {
+    // Session secret for auth (will be set via environment variable in production)
+    session: {
+      password: process.env.NUXT_SESSION_PASSWORD || 'replace-me-with-a-secure-password-min-32-chars-long-for-production'
+    },
     public: {
       // In Nitro, API routes are served from the same server at /api
       apiBase: '/api'

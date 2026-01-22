@@ -1,5 +1,9 @@
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
+
+// Auth
+const { loggedIn, user, clear } = useUserSession()
+const router = useRouter()
 
 // Provide globally accessible state
 const useStardate = useState('useStardate', () => false)
@@ -13,10 +17,34 @@ const { loadTheme } = useTheme()
 onMounted(() => {
   loadTheme()
 })
+
+// Logout function
+async function handleLogout() {
+  try {
+    await $fetch('/api/auth/logout', { method: 'POST' })
+    clear()
+    await navigateTo('/login')
+  } catch (err) {
+    console.error('Logout error:', err)
+  }
+}
 </script>
 
 <template>
   <div>
+    <!-- Top Bar with Logout (only shown when logged in) -->
+    <div v-if="loggedIn" class="fixed top-4 right-4 z-50 flex items-center gap-3">
+      <div class="text-xs text-slate-400 uppercase">
+        <span class="text-blue-400">●</span> {{ user?.username }}
+      </div>
+      <button
+        @click="handleLogout"
+        class="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white text-xs uppercase font-bold rounded transition"
+      >
+        Abmelden
+      </button>
+    </div>
+
     <NuxtPage />
     
     <!-- Toast Container -->
