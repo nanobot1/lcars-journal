@@ -5,7 +5,7 @@ export default defineEventHandler(async (event) => {
     const id = Number(getRouterParam(event, 'id'))
     const body = await readBody(event)
     
-    const todo = await updateTodo(id, body)
+    const todo = await updateTodo(id, body, event)
     
     if (!todo) {
       throw createError({

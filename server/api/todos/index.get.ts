@@ -2,7 +2,7 @@ import { getAllTodos } from '~/server/utils/database'
 
 export default defineEventHandler(async (event) => {
   try {
-    const todos = await getAllTodos()
+    const todos = await getAllTodos(event)
     return todos
   } catch (error) {
     throw createError({

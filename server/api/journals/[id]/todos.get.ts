@@ -3,7 +3,7 @@ import { getTodosByJournal } from '~/server/utils/database'
 export default defineEventHandler(async (event) => {
   try {
     const id = Number(getRouterParam(event, 'id'))
-    const todos = await getTodosByJournal(id)
+    const todos = await getTodosByJournal(id, event)
     return todos
   } catch (error) {
     throw createError({

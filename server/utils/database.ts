@@ -1,8 +1,5 @@
 // Cloudflare D1 compatible database layer with local SQLite fallback
 
-// Check if running on Cloudflare Workers
-const isCloudflare = typeof process !== 'undefined' && process.env.DB !== undefined
-
 // Local SQLite setup (for development)
 let localDb = null
 let dbInitialized = false
@@ -70,11 +67,13 @@ function saveLocalDatabase() {
 
 // Get database connection (D1 or local SQLite)
 async function useDatabase(event?: any) {
-  if (isCloudflare && event?.context?.cloudflare?.env?.DB) {
-    // Cloudflare D1
+  // Check if D1 is available (Cloudflare Pages/Workers)
+  if (event?.context?.cloudflare?.env?.DB) {
+    console.log('✅ Using Cloudflare D1 database')
     return event.context.cloudflare.env.DB
   }
-  // Local SQLite
+  // Fallback to local SQLite
+  console.log('✅ Using local SQLite database')
   return getLocalDatabase()
 }
 

@@ -2,7 +2,7 @@ import { getAllJournals } from '~/server/utils/database'
 
 export default defineEventHandler(async (event) => {
   try {
-    const journals = await getAllJournals()
+    const journals = await getAllJournals(event)
     return journals
   } catch (error) {
     throw createError({

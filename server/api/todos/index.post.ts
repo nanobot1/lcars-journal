@@ -14,7 +14,8 @@ export default defineEventHandler(async (event) => {
     const todo = await createTodo(
       body.text,
       body.journal_id || null,
-      body.priority || 'medium'
+      body.priority || 'medium',
+      event
     )
     return todo
   } catch (error) {

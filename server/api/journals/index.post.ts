@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    const journal = await createJournal(body.text)
+    const journal = await createJournal(body.text, event)
     return journal
   } catch (error) {
     if (error.statusCode) throw error
