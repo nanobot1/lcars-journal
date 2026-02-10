@@ -1,4 +1,4 @@
-# LCARS Journal & Todo - Nuxt 3 ssa
+# LCARS Journal & Todo - Nuxt 3
 
 Ein persönlicher Arbeitsbereich im LCARS-Stil mit Nuxt 3, Vue 3 und Nitro Backend.
 
